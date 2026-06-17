@@ -10,7 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import "@fontsource-variable/vazirmatn";
+import "@fontsource-variable/vazirmatn/index.css";
 import "@fontsource/orbitron/400.css";
 import "@fontsource/orbitron/700.css";
 import "@fontsource/orbitron/900.css";
