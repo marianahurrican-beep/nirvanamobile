@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/s
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { Filter, Search, ShoppingCart, Sparkles } from "lucide-react";
+import { Filter, Search, ShoppingCart, Sparkles, X } from "lucide-react";
 import { useCart } from "@/lib/cart-store";
 import { toast } from "sonner";
 
@@ -78,16 +78,18 @@ function CategoryPage() {
   };
 
   const Icon = cat.icon;
+  const activeCount = Object.values(activeFilters).reduce((a, s) => a + s.size, 0);
+  const clearAll = () => { setActiveFilters({}); setQuery(""); setPage(1); };
 
   const Sidebar = (
     <aside className="space-y-5 p-4">
       <div className="flex items-center gap-3">
         <Icon
-          className="h-7 w-7"
+          className="h-7 w-7 shrink-0"
           style={{ color: cat.colorVar, filter: `drop-shadow(0 0 6px ${cat.colorVar})` }}
         />
-        <div>
-          <h2 className="font-display text-lg" style={{ color: cat.colorVar }}>{cat.name}</h2>
+        <div className="min-w-0">
+          <h2 className="font-display truncate text-lg" style={{ color: cat.colorVar }}>{cat.name}</h2>
           <p className="text-xs text-muted-foreground">{filtered.length} محصول</p>
         </div>
       </div>
@@ -95,12 +97,22 @@ function CategoryPage() {
         <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           dir="rtl"
-          placeholder="جستجو..."
+          placeholder="جستجو در نام یا کد محصول..."
           value={query}
           onChange={(e) => { setQuery(e.target.value); setPage(1); }}
           className="pr-9"
         />
       </div>
+
+      {(activeCount > 0 || query) && (
+        <button
+          onClick={clearAll}
+          className="flex w-full items-center justify-center gap-1.5 rounded-md border border-white/15 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-white/40 transition"
+        >
+          <X className="h-3.5 w-3.5" /> پاک کردن همه فیلترها
+        </button>
+      )}
+
       {cat.filters.map((f) => (
         <div key={f.key}>
           <h3 className="mb-2 text-sm font-bold text-foreground">{f.label}</h3>
@@ -113,10 +125,10 @@ function CategoryPage() {
                   onClick={() => toggleFilter(f.key, opt)}
                   className={`rounded-full border px-3 py-1 text-xs transition ${
                     active
-                      ? "border-transparent text-background"
+                      ? "border-transparent text-background font-bold"
                       : "border-white/15 text-muted-foreground hover:text-foreground hover:border-white/40"
                   }`}
-                  style={active ? { background: cat.colorVar } : {}}
+                  style={active ? { background: cat.colorVar, boxShadow: `0 0 12px -2px ${cat.colorVar}` } : {}}
                 >
                   {opt}
                 </button>
@@ -157,19 +169,37 @@ function CategoryPage() {
           </div>
 
           <div>
-            <div className="mb-4 flex items-center justify-between lg:hidden">
+            <div className="mb-4 flex items-center justify-between gap-2 lg:hidden">
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="relative">
                     <Filter className="ml-2 h-4 w-4" /> فیلترها
+                    {activeCount > 0 && (
+                      <span
+                        className="absolute -top-1 -left-1 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px] font-bold text-background"
+                        style={{ background: cat.colorVar }}
+                      >
+                        {activeCount}
+                      </span>
+                    )}
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[300px] overflow-y-auto">
+                <SheetContent side="right" className="w-[85vw] max-w-[340px] overflow-y-auto">
                   <SheetTitle className="sr-only">فیلترها</SheetTitle>
                   {Sidebar}
                 </SheetContent>
               </Sheet>
-              <span className="text-xs text-muted-foreground">{filtered.length} محصول</span>
+              <div className="relative min-w-0 flex-1">
+                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  dir="rtl"
+                  placeholder="جستجو..."
+                  value={query}
+                  onChange={(e) => { setQuery(e.target.value); setPage(1); }}
+                  className="pr-9 h-9 text-sm"
+                />
+              </div>
+              <span className="shrink-0 text-xs text-muted-foreground">{filtered.length}</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -239,12 +269,12 @@ function Pagination({
   page, total, onChange, color,
 }: { page: number; total: number; onChange: (p: number) => void; color: string }) {
   const pages: number[] = [];
-  const start = Math.max(1, page - 2);
-  const end = Math.min(total, start + 4);
-  for (let i = start; i <= end; i++) pages.push(i);
+  const start = Math.max(1, Math.min(page - 1, total - 2));
+  const end = Math.min(total, start + 2);
+  for (let i = Math.max(1, start); i <= end; i++) pages.push(i);
 
   return (
-    <div className="mt-8 flex items-center justify-center gap-2">
+    <div className="mt-8 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
       <Button variant="outline" size="sm" disabled={page === 1} onClick={() => onChange(page - 1)}>
         قبلی
       </Button>
@@ -252,7 +282,7 @@ function Pagination({
         <button
           key={p}
           onClick={() => onChange(p)}
-          className={`h-9 w-9 rounded-md text-sm transition ${
+          className={`h-9 min-w-9 rounded-md px-2 text-sm transition ${
             p === page
               ? "text-background font-bold"
               : "border border-white/15 text-muted-foreground hover:text-foreground"
@@ -262,6 +292,7 @@ function Pagination({
           {p}
         </button>
       ))}
+      <span className="text-xs text-muted-foreground">از {total}</span>
       <Button variant="outline" size="sm" disabled={page === total} onClick={() => onChange(page + 1)}>
         بعدی
       </Button>
