@@ -41,7 +41,8 @@ export const Route = createFileRoute("/$slug")({
 const PER_PAGE = 24;
 
 function CategoryPage() {
-  const { cat } = Route.useLoaderData();
+  const data = Route.useLoaderData() as { cat: import("@/data/categories").Category };
+  const cat = data.cat;
   const allProducts = useMemo(() => generateProducts(cat), [cat]);
 
   const [query, setQuery] = useState("");
