@@ -23,11 +23,24 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run build --if-present
+          # Normalize common static outputs into ./dist for Pages
+          if [ -d "./dist" ]; then
+            echo "Using ./dist"
+          elif [ -d "./.output/public" ]; then
+            mv .output/public ./dist
+          elif [ -d "./.output/static" ]; then
+            mv .output/static ./dist
+          elif [ -d "./dist-ssr" ]; then
+            mv dist-ssr ./dist
+          else
+            echo "No static output found; listing files for debug:"
+            ls -la
+            exit 1
+          fi
 
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v1
